@@ -3,6 +3,9 @@ from app.models.task import Task
 from ..db import db
 from sqlalchemy import asc,desc
 from datetime import datetime
+import requests
+import json
+import os
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
@@ -99,6 +102,23 @@ def mark_complete(task_id):
 
     task.completed_at = datetime.now()
     db.session.commit()
+
+    # send slack
+    url = "https://slack.com/api/chat.postMessage"
+
+    payload = json.dumps({
+        "channel": "task-notifications",
+        "text": f"You just completed task: {task.id}:{task.title}!"
+    })
+    headers = {
+        'Authorization': f'Bearer {os.environ.get("SLACK_API_TOKEN")}',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.status_code != 200:
+        response = {"message": f"Task {task_id} failed to notify slack with status {response.status_code}"}
+        abort(make_response(response , 400))        
 
     return {
         "task": {
