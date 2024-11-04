@@ -36,6 +36,8 @@ def create_task():
     return response, 201    
 
 
+
+
 @tasks_bp.get("")
 def get_all_tasks():
     query = db.select(Task)
@@ -54,12 +56,7 @@ def get_all_tasks():
 
     tasks_response = []
     for task in tasks:
-        tasks_response.append({
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.is_complete()
-        })
+        tasks_response.append(task.to_dict())
 
     return tasks_response
 
@@ -67,14 +64,7 @@ def get_all_tasks():
 def get_one_task_by_id(task_id):
     task = validate_task(task_id)
 
-    return {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.is_complete()
-        }
-    }
+    return {"task": task.to_dict()}
 
 
 @tasks_bp.put("/<task_id>")
@@ -86,15 +76,7 @@ def update_task(task_id):
     task.description = request_body["description"]
     db.session.commit()
 
-    return {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.is_complete()
-        }
-    } 
-
+    return {"task": task.to_dict()}
 
 @tasks_bp.patch("/<task_id>/mark_complete")
 def mark_complete(task_id):
@@ -120,14 +102,7 @@ def mark_complete(task_id):
         response = {"message": f"Task {task_id} failed to notify slack with status {response.status_code}"}
         abort(make_response(response , 400))        
 
-    return {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.is_complete()
-        }
-    } 
+    return {"task": task.to_dict()}
 
 
 @tasks_bp.patch("/<task_id>/mark_incomplete")
@@ -137,14 +112,7 @@ def mark_incomplete(task_id):
     task.completed_at = None
     db.session.commit()
 
-    return {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.is_complete()
-        }
-    } 
+    return {"task": task.to_dict()}
 
 
 
