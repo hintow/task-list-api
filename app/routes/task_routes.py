@@ -2,6 +2,7 @@ from flask import Blueprint, abort, make_response, request, Response
 from app.models.task import Task
 from ..db import db
 from sqlalchemy import asc,desc
+from datetime import datetime
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
@@ -90,6 +91,41 @@ def update_task(task_id):
             "is_complete": task.is_complete()
         }
     } 
+
+
+@tasks_bp.patch("/<task_id>/mark_complete")
+def mark_complete(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = datetime.now()
+    db.session.commit()
+
+    return {
+        "task": {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "is_complete": task.is_complete()
+        }
+    } 
+
+
+@tasks_bp.patch("/<task_id>/mark_incomplete")
+def mark_incomplete(task_id):
+    task = validate_task(task_id)
+
+    task.completed_at = None
+    db.session.commit()
+
+    return {
+        "task": {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "is_complete": task.is_complete()
+        }
+    } 
+
 
 
 @tasks_bp.delete("/<task_id>")
