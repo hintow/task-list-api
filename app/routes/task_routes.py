@@ -12,44 +12,28 @@ tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 @tasks_bp.post("")
 def create_task():
     request_body = request.get_json()
-    title = request_body.get("title")
-    description = request_body.get("description")
-
-    if not title or not description:
-        response = {
-            "details": "Invalid data"
-        }
+    try:
+         new_task = Task.from_dict(request_body)
+    except KeyError as e:        
+        response = { "details": "Invalid data"}
         abort(make_response(response , 400))
 
-    new_task = Task(title=title, description=description)
     db.session.add(new_task)
     db.session.commit()
 
-    response = {
-        "task": {
-            "id": new_task.id,
-            "title": new_task.title,
-            "description": new_task.description,
-            "is_complete":new_task.is_complete()
-        }
-    }
+    response = { "task": new_task.to_dict()}
     return response, 201    
-
-
 
 
 @tasks_bp.get("")
 def get_all_tasks():
     query = db.select(Task)
-
     sort_param = request.args.get("sort")
     if sort_param == "asc":
         query = query.order_by(asc(Task.title))
     if sort_param == "desc":
-        query = query.order_by(desc(Task.title))
-    
+        query = query.order_by(desc(Task.title))   
     else:
-
         query = query.order_by(Task.id)
 
     tasks = db.session.scalars(query)
