@@ -6,10 +6,10 @@ from datetime import datetime
 import requests
 import json
 import os
+                
+bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
-tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
-
-@tasks_bp.post("")
+@bp.post("")
 def create_task():
     request_body = request.get_json()
     try:
@@ -25,7 +25,7 @@ def create_task():
     return response, 201    
 
 
-@tasks_bp.get("")
+@bp.get("")
 def get_all_tasks():
     query = db.select(Task)
     sort_param = request.args.get("sort")
@@ -44,14 +44,14 @@ def get_all_tasks():
 
     return tasks_response
 
-@tasks_bp.get("/<task_id>")
+@bp.get("/<task_id>")
 def get_one_task_by_id(task_id):
     task = validate_task(task_id)
 
     return {"task": task.to_dict()}
 
-
-@tasks_bp.put("/<task_id>")
+# should it be refactored with from_dict??
+@bp.put("/<task_id>")
 def update_task(task_id):
     task = validate_task(task_id)
     request_body = request.get_json()
@@ -62,7 +62,7 @@ def update_task(task_id):
 
     return {"task": task.to_dict()}
 
-@tasks_bp.patch("/<task_id>/mark_complete")
+@bp.patch("/<task_id>/mark_complete")
 def mark_complete(task_id):
     task = validate_task(task_id)
 
@@ -89,7 +89,7 @@ def mark_complete(task_id):
     return {"task": task.to_dict()}
 
 
-@tasks_bp.patch("/<task_id>/mark_incomplete")
+@bp.patch("/<task_id>/mark_incomplete")
 def mark_incomplete(task_id):
     task = validate_task(task_id)
 
@@ -100,7 +100,7 @@ def mark_incomplete(task_id):
 
 
 
-@tasks_bp.delete("/<task_id>")
+@bp.delete("/<task_id>")
 def delete_task(task_id):
     task = validate_task(task_id)
     db.session.delete(task)
