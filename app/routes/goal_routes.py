@@ -60,44 +60,6 @@ def update_goal(goal_id):
 
     return {"goal": goal.to_dict()}
 
-# @bp.patch("/<task_id>/mark_complete")
-# def mark_complete(task_id):
-#     task = validate_task(task_id)
-
-#     task.completed_at = datetime.now()
-#     db.session.commit()
-
-#     # send slack
-#     url = "https://slack.com/api/chat.postMessage"
-
-#     payload = json.dumps({
-#         "channel": "task-notifications",
-#         "text": f"You just completed task: {task.id}:{task.title}!"
-#     })
-#     headers = {
-#         'Authorization': f'Bearer {os.environ.get("SLACK_API_TOKEN")}',
-#         'Content-Type': 'application/json'
-#     }
-
-#     response = requests.request("POST", url, headers=headers, data=payload)
-#     if response.status_code != 200:
-#         response = {"message": f"Task {task_id} failed to notify slack with status {response.status_code}"}
-#         abort(make_response(response , 400))        
-
-#     return {"task": task.to_dict()}
-
-
-# @bp.patch("/<goal_id>/mark_incomplete")
-# def mark_incomplete(goal_id):
-#     goal = validate_task(goal_id)
-
-#     goal.completed_at = None
-#     db.session.commit()
-
-#     return {"goal": goal.to_dict()}
-
-
-
 @bp.delete("/<goal_id>")
 def delete_goal(goal_id):
     goal = validate_goal(goal_id)
@@ -119,7 +81,46 @@ def validate_goal(goal_id):
     goal = db.session.scalar(query)
 
     if not goal:
-        response = {"message": f"Goal {goal_id} not found"}
+        response = {"message":f"Goal {goal_id} not found"}
         abort(make_response(response, 404))
 
     return goal
+
+
+@bp.post("/<goal_id>/tasks")
+def create_task_with_goal(goal_id):
+    goal =validate_goal(goal_id)
+    
+    request_body = request.get_json()
+    # request_body["goal_id"] = goal.id
+
+    try:
+        # new_task = Task.from_dict(request_body)
+        task_ids = request_body["task_ids"]
+
+    except KeyError as error:
+        response = {"message": f"Invalid request: missing {error.args[0]}"}
+        abort(make_response(response, 400))
+    
+    tasks = Task.query.filter(Task.id.in_(task_ids)).all()
+    if len(tasks) != len(task_ids):
+        response = {"message": "Some tasks were not found"}
+        abort(make_response(response, 404))
+
+    for task in tasks:
+        task.goal_id = goal.id
+        
+    db.session.commit()
+
+    response = {"id" : goal.id, "task_ids": task_ids}
+    return make_response(response, 200) 
+
+@bp.get("/<goal_id>/tasks")
+def get_tasks_by_goal(goal_id):
+    goal = validate_goal(goal_id)
+    response = {
+        "id" : goal.id,
+        "title" : goal.title,
+        "tasks":[task.to_dict() for task in goal.tasks]
+    }
+    return response, 200
